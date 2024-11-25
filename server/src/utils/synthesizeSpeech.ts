@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import axios from "axios";
+import { voiceData } from './call';
 
 /**
  * Synthesizes speech using the Eleven Labs Text-to-Speech API.
@@ -10,12 +11,12 @@ import axios from "axios";
  * @param {string} text - The text to be synthesized into speech.
  * @returns {Promise<Buffer>} - A Promise that resolves to the audio data (as a Buffer).
  */
-const synthesizeSpeech = async (apiKey: string, voiceId: string, text: string) => {
+const synthesizeSpeech = async (voiceId: string, text: string) => {
     try {
       const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
   
       const headers = {
-        'xi-api-key': apiKey,
+        'xi-api-key': process.env.ELEVEN_LABS_API_KEY as string,
         'Content-Type': 'application/json',
       };
   
@@ -46,8 +47,7 @@ const synthesizeSpeech = async (apiKey: string, voiceId: string, text: string) =
  * @returns {Promise<string>} - A Promise that resolves to the path of the saved audio file.
  */
 export const synthesizeSpeechToFile = async (
-    apiKey: string,
-    voiceId: string,
+    // voiceId: string,
     text: string,
     outputDir = './output',
     fileName = 'output.mp3'
@@ -58,8 +58,9 @@ export const synthesizeSpeechToFile = async (
         fs.mkdirSync(outputDir, { recursive: true });
       }
   
+      
       // Call synthesizeSpeech to get the audio data
-      const audioData = await synthesizeSpeech(apiKey, voiceId, text);
+      const audioData = await synthesizeSpeech(voiceData.voiceId, text);
   
       // Define the full file path
       const filePath = path.join(outputDir, fileName);
@@ -74,3 +75,24 @@ export const synthesizeSpeechToFile = async (
       throw error;
     }
   };
+
+
+export const listVoices = async () => {
+  try {
+    const url = `https://api.elevenlabs.io/v1/voices`;
+
+    const headers = {
+      'xi-api-key': process.env.ELEVEN_LABS_API_KEY as string,
+      'Content-Type': 'application/json',
+    };
+    const response = await axios.get(url, {
+      headers,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error synthesizing speech:', JSON.stringify(error));
+    throw error;
+  }
+};
+  

@@ -3,7 +3,7 @@ import { log } from '../utils/log';
 import OpenAI from "openai";
 import { synthesizeSpeechToFile } from '../utils/synthesizeSpeech';
 import path from 'path';
-import { playMessageInCall } from '../utils/call';
+import { getConferenceInfo, playMessageInCall, playMessageInConference } from '../utils/call';
 
 const openai = new OpenAI();
 
@@ -54,35 +54,36 @@ const handleTranscriptionContent = async (data: any, callSid: string) => {
     log(`Final: ${data.Final}`);
     log(`CallSid: ${callSid}`);
 
-    // const callSid = callStore['callSid'];
-    // if (!callSid) return;
+    const isEvenSequence = parseInt(data.SequenceId) % 2 === 0;
 
-    // if (data.Final) {
-    //     const completion = await openai.chat.completions.create({
-    //         model: "gpt-4o-mini",
-    //         messages: [
-    //             { role: "system", content: "You are an extremely helpful call assistant" },
-    //             {
-    //                 role: "user",
-    //                 content: `${transcription.transcript}`,
-    //             },
-    //         ],
-    //     });
+    if (data.Final && isEvenSequence) {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "You are an extremely helpful call assistant" },
+                {
+                    role: "user",
+                    content: `${transcription.transcript}`,
+                },
+            ],
+        });
         
-    //     console.log(completion.choices[0].message);    
+        console.log(completion.choices[0].message);    
 
-    //     if (completion.choices[0].message.content) {
-    //         await synthesizeSpeechToFile(
-    //             'sk_802fdc2b4205b193c9a0ec92e4e7491259934a20e21b741d',
-    //             'twIdd9EWqLnDdJevmMxZ',
-    //             completion.choices[0].message.content,
-    //             path.join(__dirname, '..', 'public'),
-    //             'voice.mp3'
-    //         )
+        if (completion.choices[0].message.content) {
+            await synthesizeSpeechToFile(
+                // 'twIdd9EWqLnDdJevmMxZ',
+                completion.choices[0].message.content,
+                path.join(__dirname, '..', 'public'),
+                'voice.mp3'
+            )
 
-    //         await playMessageInCall(callSid, "https://adapted-calm-crow.ngrok-free.app/voice.mp3")
-    //     }
-    // }
+            const conferenceName = 'GatherConferenceRoom';
+            const conference = await getConferenceInfo(conferenceName);
+            if (!conference) return
+            await playMessageInConference(conference.sid, "https://adapted-calm-crow.ngrok-free.app/voice.mp3")
+        }
+    }
 };
   
 const handleTranscriptionStopped = (data: any) => {

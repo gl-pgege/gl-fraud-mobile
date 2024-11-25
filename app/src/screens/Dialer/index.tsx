@@ -1,5 +1,13 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import BackspaceButton from './BackspaceButton';
 import MakeCallButton from '../../components/Call/MakeCallButton';
 import ToggleClientInputButton from './ToggleClientInputButton';
@@ -9,15 +17,75 @@ import useDialer from './hooks';
 
 const Dialer: React.FC = () => {
   const { dialpad, makeCall, outgoing, recipientToggle } = useDialer();
+  const [names, setNames] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showDialpad, setShowDialpad] = useState(false);
 
-  const backspaceButton = React.useMemo(
-    () =>
-      dialpad.backspace.isDisabled ? (
-        <View style={styles.emptyButton} />
-      ) : (
-        <BackspaceButton onPress={dialpad.backspace.handle} />
-      ),
-    [dialpad.backspace.isDisabled, dialpad.backspace.handle],
+  useEffect(() => {
+    const fetchNames = async () => {
+      try {
+        const response = await fetch(
+          'https://adapted-calm-crow.ngrok-free.app/voice-data',
+        );
+        const data = await response.json();
+        setNames(data);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to fetch names.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNames();
+  }, []);
+
+  const handleSelectName = async (voiceId: string) => {
+    try {
+      const response = await fetch(
+        'https://adapted-calm-crow.ngrok-free.app/set-voice',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voiceId }),
+        },
+      );
+
+      if (response.ok) {
+        setShowDialpad(true);
+      } else {
+        Alert.alert('Error', 'Failed to set voice.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to set voice.');
+    }
+  };
+
+  if (!showDialpad) {
+    return (
+      <View style={styles.container} testID="nameList">
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <FlatList
+            data={names}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.listItem}
+                onPress={() => handleSelectName(item.id)}>
+                <Text style={styles.listText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
+    );
+  }
+
+  const backspaceButton = dialpad.backspace.isDisabled ? (
+    <View style={styles.emptyButton} />
+  ) : (
+    <BackspaceButton onPress={dialpad.backspace.handle} />
   );
 
   return (
@@ -55,8 +123,17 @@ const Dialer: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    flexDirection: 'column',
-    height: '100%',
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  listItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+  },
+  listText: {
+    fontSize: 16,
   },
   remoteParticipant: {
     padding: 16,
