@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Button,
 } from 'react-native';
 import BackspaceButton from './BackspaceButton';
 import MakeCallButton from '../../components/Call/MakeCallButton';
@@ -62,7 +63,7 @@ const Dialer: React.FC = () => {
 
   if (!showDialpad) {
     return (
-      <View style={styles.container} testID="nameList">
+      <View testID="nameList">
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
@@ -90,6 +91,11 @@ const Dialer: React.FC = () => {
 
   return (
     <View style={styles.container} testID="dialer">
+      {/* Back Button */}
+      <View style={styles.backButton}>
+        <Button title="Back" onPress={() => setShowDialpad(false)} />
+      </View>
+
       <View style={styles.remoteParticipant}>
         <OutgoingRemoteParticipant
           outgoingIdentity={outgoing.client.value}
@@ -134,6 +140,10 @@ const styles = StyleSheet.create({
   },
   listText: {
     fontSize: 16,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   remoteParticipant: {
     padding: 16,

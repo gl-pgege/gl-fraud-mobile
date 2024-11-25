@@ -2,7 +2,7 @@ import { Request, RequestHandler, Response } from 'express';
 import { twiml, validateExpressRequest } from 'twilio';
 import { ServerConfig } from '../common/types';
 import { log } from '../utils/log';
-import { addCalleeToConference } from '../utils/call';
+import { addCalleeToConference, triggerGatherForCallee } from '../utils/call';
 
 export function createTwimlRoute(
   serverConfig: ServerConfig,
@@ -72,16 +72,16 @@ export function createTwimlRoute(
     //   callerId,
     // }).conference(conferenceName);
 
-    const dial = twimlResponse.dial({
-      answerOnBridge: true,
-      callerId,
-    });
-    dial.number({
-      url: 'https://adapted-calm-crow.ngrok-free.app/post-dial'
-    }, to);
+    // const dial = twimlResponse.dial({
+    //   answerOnBridge: true,
+    //   callerId,
+    // });
+    // dial.number({
+    //   url: 'https://adapted-calm-crow.ngrok-free.app/post-dial'
+    // }, to);
  
     // Send the response
     res.header('Content-Type', 'text/xml').status(200).send(twimlResponse.toString());
-    // addCalleeToConference(to, "conferenceName", callerId)
+    triggerGatherForCallee(to, callerId)
   };
 }

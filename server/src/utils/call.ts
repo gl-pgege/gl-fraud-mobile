@@ -121,6 +121,41 @@ export async function addCalleeToConference(
   }
 }
 
+/**
+ * Adds a callee to the specified Twilio conference.
+ *
+ * @param calleeNumber - The phone number to dial and add to the conference.
+ * @param conferenceName - The name of the conference to join.
+ * @param callerId - The Twilio number used to make the call.
+ * @returns The Call SID of the created call.
+ */
+export async function triggerGatherForCallee(
+  calleeNumber: string,
+  callerId: string
+): Promise<string> {
+  const twimlResponse = new VoiceResponse();
+  
+  twimlResponse.gather({
+    input: ['speech'],
+    action: 'https://adapted-calm-crow.ngrok-free.app/gather-response',
+    speechTimeout: 'end',
+    timeout: 2,
+  });
+  try {
+    const call = await client.calls.create({
+      to: calleeNumber,
+      from: callerId,
+      twiml: twimlResponse.toString()
+    });
+
+    console.log(`Callee added to conference. Call SID: ${call.sid}`);
+    return call.sid;
+  } catch (error) {
+    console.error('Error adding callee to conference:', error);
+    throw error;
+  }
+}
+
 export async function getConferenceInfo(conferenceName: string) {
   const conferences = await client.conferences.list({ status: 'in-progress' });
   const conference = conferences.find(
